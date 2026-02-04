@@ -3,7 +3,16 @@ import re
 
 class Notification:
     def send_lotto_buying_message(self, body: dict, webhook_url: str) -> None:
-        assert type(webhook_url) == str
+        if not webhook_url:
+            print("⚠️ 웹훅 URL이 설정되지 않아 알림을 건너뜁니다.")
+            result = body.get("result", {})
+            if result.get("resultMsg", "FAILURE").upper() == "SUCCESS":
+                lotto_number_str = self.make_lotto_number_message(result["arrGameChoiceNum"])
+                print(f"✅ {result['buyRound']}회 로또 구매 완료 💰 남은잔액: {body.get('balance', '확인불가')}")
+                print(f"번호:\n{lotto_number_str}")
+            else:
+                print(f"❌ 로또 구매 실패 ({result.get('resultMsg', 'Unknown Error')}) 남은잔액: {body.get('balance', '확인불가')}")
+            return
 
         result = body.get("result", {})
         if result.get("resultMsg", "FAILURE").upper() != "SUCCESS":  
@@ -30,6 +39,21 @@ class Notification:
         return lotto_number
 
     def send_win720_buying_message(self, body: dict, webhook_url: str) -> None:
+        if not webhook_url:
+            print("⚠️ 웹훅 URL이 설정되지 않아 알림을 건너뜁니다.")
+            if body.get("resultCode") == '100':
+                win720_round = body.get("round", "?")
+                if win720_round == "?":
+                    try:
+                         win720_round = body.get("saleTicket", "").split("|")[-2]
+                    except (IndexError, AttributeError, TypeError):
+                         win720_round = "?"
+                win720_number_str = self.make_win720_number_message(body.get("saleTicket")) if body.get("saleTicket") else "번호 정보 없음"
+                print(f"✅ {win720_round}회 연금복권 구매 완료 💰 남은잔액: {body.get('balance', '확인불가')}")
+                print(f"번호:\n{win720_number_str}")
+            else:
+                print(f"❌ 연금복권 구매 실패 ({body.get('resultMsg', 'Unknown Error')}) 남은잔액: {body.get('balance', '확인불가')}")
+            return
         
         if body.get("resultCode") != '100':  
             message = f"연금복권 구매 실패 (`{body.get('resultMsg', 'Unknown Error')}`) 남은잔액 : {body.get('balance', '확인불가')}"
@@ -60,7 +84,22 @@ class Notification:
 
     def send_lotto_winning_message(self, winning: dict, webhook_url: str) -> None: 
         assert type(winning) == dict
-        assert type(webhook_url) == str
+        if not webhook_url:
+            print("⚠️ 웹훅 URL이 설정되지 않아 알림을 건너뜁니다.")
+            balance_str = winning.get('balance', '확인불가')
+            try:
+                if winning["lotto_details"]:
+                    print(f"✅ 로또 {winning['round']}회 결과")
+                    for line in winning["lotto_details"]:
+                        print(f"  {line['label']} {line['status']}: {' '.join(line['result'])}")
+                is_winning = winning['money'] != "-" and winning['money'] != "0 원" and winning['money'] != "0"
+                if is_winning:
+                    print(f"🎉 {winning['money']} 당첨! (남은잔액: {balance_str})")
+                else:
+                    print(f"다음 기회에... 🫠 (남은잔액: {balance_str})")
+            except KeyError:
+                print(f"로또 - 다음 기회에... 🫠 (남은잔액: {balance_str})")
+            return
 
         balance_str = winning.get('balance', '확인불가')
         try: 
@@ -108,7 +147,18 @@ class Notification:
 
     def send_win720_winning_message(self, winning: dict, webhook_url: str) -> None: 
         assert type(winning) == dict
-        assert type(webhook_url) == str
+        if not webhook_url:
+            print("⚠️ 웹훅 URL이 설정되지 않아 알림을 건너뜁니다.")
+            balance_str = winning.get('balance', '확인불가')
+            try:
+                if "win720_details" in winning and winning["win720_details"]:
+                    print(f"✅ 연금복권 결과")
+                    for line in winning["win720_details"]:
+                        print(f"  {line['label']} {line['status']}: {line['result']}")
+                print(f"남은잔액: {balance_str}")
+            except:
+                print(f"연금복권 - 다음 기회에... 🫠 (남은잔액: {balance_str})")
+            return
 
         balance_str = winning.get('balance', '확인불가')
         try:

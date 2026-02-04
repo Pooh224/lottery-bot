@@ -1,4 +1,8 @@
 import requests
+import urllib3
+
+# SSL 경고 메시지 비활성화
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class HttpClient:
     def __init__(self):
@@ -11,7 +15,7 @@ class HttpClient:
         session_headers = self.session.headers.copy()
         if headers:
             session_headers.update(headers)
-        res = self.session.post(url, headers=session_headers, data=data, timeout=30, allow_redirects=True)
+        res = self.session.post(url, headers=session_headers, data=data, timeout=30, allow_redirects=True, verify=False)
         res.raise_for_status()
         return res
 
@@ -19,7 +23,7 @@ class HttpClient:
         session_headers = self.session.headers.copy()
         if headers:
             session_headers.update(headers)
-        res = self.session.get(url, headers=session_headers, params=params, timeout=30)
+        res = self.session.get(url, headers=session_headers, params=params, timeout=30, verify=False)
         res.raise_for_status()
         return res
 
